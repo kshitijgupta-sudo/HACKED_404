@@ -3,6 +3,7 @@
 ROOT_DIR="/Users/priyanshukumar/Documents/pk/hackthonprototype4"
 BACKEND_URL="http://127.0.0.1:8000/api/health"
 FRONTEND_URL="http://127.0.0.1:5173"
+BACKEND_PYTHON="$ROOT_DIR/backend/.venv/bin/python"
 
 cleanup() {
   kill "$BACKEND_PID" "$FRONTEND_PID" 2>/dev/null
@@ -21,7 +22,11 @@ wait_for_backend() {
 }
 
 cd "$ROOT_DIR/backend" || exit 1
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 &
+if [ -x "$BACKEND_PYTHON" ]; then
+  "$BACKEND_PYTHON" -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 &
+else
+  uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 &
+fi
 BACKEND_PID=$!
 
 cd "$ROOT_DIR/frontend" || exit 1

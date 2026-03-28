@@ -5,3 +5,7 @@ PyMuPDF==1.25.5
 Pillow==11.2.1
 pytesseract==0.3.13
 rapidocr-onnxruntime==1.4.4
+numpy
+opencv-python
+face_recognition
+scipy

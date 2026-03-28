@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { api } from "../services/api";
 
 const TimetableContext = createContext(null);
 
@@ -11,8 +12,7 @@ export function TimetableProvider({ children }) {
   const fetchEntries = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/timetable");
-      const data = await response.json();
+      const data = await api.get("/api/timetable");
       setEntries(data.items ?? []);
       setError("");
     } catch (fetchError) {
@@ -34,16 +34,7 @@ export function TimetableProvider({ children }) {
     formData.append("file", file);
 
     try {
-      const response = await fetch("/api/timetable/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || "Upload failed.");
-      }
-
+      const data = await api.post("/api/timetable/upload", formData);
       await fetchEntries();
       return data;
     } catch (uploadError) {
@@ -58,11 +49,7 @@ export function TimetableProvider({ children }) {
   const clearTimetable = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/timetable", { method: "DELETE" });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || "Unable to clear timetable.");
-      }
+      await api.delete("/api/timetable");
       setEntries([]);
       setError("");
     } catch (clearError) {

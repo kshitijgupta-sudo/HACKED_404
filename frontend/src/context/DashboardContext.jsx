@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { api } from "../services/api";
 
 const DashboardContext = createContext(null);
 
@@ -6,12 +7,16 @@ export function DashboardProvider({ children }) {
   const [dashboard, setDashboard] = useState({
     attendance_records: [],
     absent_students: [],
+    face_unverified_items: [],
+    failed_scan_alerts: [],
     attendance_chart: [],
     curriculum_chart: [],
     summary: {
       records_today: 0,
       present_today: 0,
       absent_today: 0,
+      face_unverified_count: 0,
+      failed_scan_alert_count: 0,
     },
     last_refreshed: "",
   });
@@ -20,11 +25,7 @@ export function DashboardProvider({ children }) {
 
   const fetchDashboard = async () => {
     try {
-      const response = await fetch("/api/dashboard");
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || "Unable to load dashboard.");
-      }
+      const data = await api.get("/api/dashboard");
       setDashboard(data);
       setError("");
     } catch (fetchError) {
@@ -42,11 +43,7 @@ export function DashboardProvider({ children }) {
   }, []);
 
   const exportCsv = async () => {
-    const response = await fetch("/api/dashboard/export.csv");
-    if (!response.ok) {
-      throw new Error("Unable to export CSV.");
-    }
-    const blob = await response.blob();
+    const blob = await api.download("/api/dashboard/export.csv");
     const url = window.URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;

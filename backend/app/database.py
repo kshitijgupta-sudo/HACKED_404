@@ -66,6 +66,100 @@ def init_db() -> None:
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS students (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                roll_number TEXT NOT NULL UNIQUE,
+                section TEXT NOT NULL DEFAULT '',
+                career_goal TEXT NOT NULL DEFAULT '',
+                weak_subjects TEXT NOT NULL DEFAULT '[]',
+                strong_subjects TEXT NOT NULL DEFAULT '[]',
+                interests TEXT NOT NULL DEFAULT '',
+                face_encoding TEXT,
+                face_encodings_json TEXT NOT NULL DEFAULT '[]',
+                glasses_face_encodings_json TEXT NOT NULL DEFAULT '[]',
+                encoding_count INTEGER NOT NULL DEFAULT 0,
+                image_path TEXT,
+                registered_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS face_students (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                roll_number TEXT NOT NULL UNIQUE,
+                department TEXT NOT NULL,
+                face_encoding TEXT NOT NULL,
+                image_path TEXT NOT NULL,
+                registered_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        ensure_column(connection, "face_students", "face_encodings_json", "TEXT DEFAULT '[]'")
+        ensure_column(connection, "face_students", "glasses_face_encodings_json", "TEXT DEFAULT '[]'")
+        ensure_column(connection, "face_students", "encoding_count", "INTEGER NOT NULL DEFAULT 0")
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS face_attendance_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id INTEGER,
+                student_name TEXT NOT NULL,
+                roll_number TEXT NOT NULL,
+                latitude REAL NOT NULL,
+                longitude REAL NOT NULL,
+                gps_verified INTEGER NOT NULL DEFAULT 0,
+                face_verified INTEGER NOT NULL DEFAULT 0,
+                confidence REAL NOT NULL DEFAULT 0,
+                distance_meters REAL NOT NULL DEFAULT 0,
+                status TEXT NOT NULL CHECK(status IN ('present', 'unverified')),
+                reason TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (student_id) REFERENCES face_students (id) ON DELETE SET NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS failed_attempts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ip_address TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                student_name TEXT NOT NULL DEFAULT 'Unknown',
+                roll_number TEXT NOT NULL DEFAULT 'unknown',
+                attempt_count INTEGER NOT NULL DEFAULT 3,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS face_geofence_settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                class_name TEXT NOT NULL DEFAULT 'Main Classroom',
+                latitude REAL NOT NULL,
+                longitude REAL NOT NULL,
+                radius_meters REAL NOT NULL DEFAULT 50,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO face_geofence_settings (
+                id,
+                class_name,
+                latitude,
+                longitude,
+                radius_meters
+            )
+            VALUES (1, 'Main Classroom', 31.3956, 75.5352, 50)
+            """
+        )
+        migrate_face_students_to_students(connection)
         seed_attendance_records(connection)
         connection.commit()
     finally:
@@ -122,3 +216,77 @@ def seed_attendance_records(connection: sqlite3.Connection) -> None:
         """,
         rows,
     )
+
+
+def ensure_column(
+    connection: sqlite3.Connection,
+    table_name: str,
+    column_name: str,
+    column_definition: str,
+) -> None:
+    existing_columns = {
+        row["name"]
+        for row in connection.execute(f"PRAGMA table_info({table_name})").fetchall()
+    }
+    if column_name not in existing_columns:
+        connection.execute(
+            f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_definition}"
+        )
+
+
+def migrate_face_students_to_students(connection: sqlite3.Connection) -> None:
+    legacy_rows = connection.execute(
+        """
+        SELECT
+            id,
+            name,
+            roll_number,
+            department,
+            face_encoding,
+            face_encodings_json,
+            glasses_face_encodings_json,
+            encoding_count,
+            image_path,
+            registered_at
+        FROM face_students
+        """
+    ).fetchall()
+
+    for row in legacy_rows:
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO students (
+                id,
+                name,
+                roll_number,
+                section,
+                career_goal,
+                weak_subjects,
+                strong_subjects,
+                interests,
+                face_encoding,
+                face_encodings_json,
+                glasses_face_encodings_json,
+                encoding_count,
+                image_path,
+                registered_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                row["id"],
+                row["name"],
+                row["roll_number"],
+                row["department"],
+                "",
+                "[]",
+                "[]",
+                "",
+                row["face_encoding"],
+                row["face_encodings_json"],
+                row["glasses_face_encodings_json"],
+                row["encoding_count"],
+                row["image_path"],
+                row["registered_at"],
+            ),
+        )

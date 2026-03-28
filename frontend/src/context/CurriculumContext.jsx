@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { api } from "../services/api";
 
 const CurriculumContext = createContext(null);
 
@@ -13,20 +14,10 @@ export function CurriculumProvider({ children }) {
   const fetchCurriculum = async () => {
     setIsLoading(true);
     try {
-      const [curriculumResponse, progressResponse] = await Promise.all([
-        fetch("/api/curriculum"),
-        fetch("/api/curriculum/progress"),
+      const [curriculumData, progressData] = await Promise.all([
+        api.get("/api/curriculum"),
+        api.get("/api/curriculum/progress"),
       ]);
-
-      const curriculumData = await curriculumResponse.json();
-      const progressData = await progressResponse.json();
-
-      if (!curriculumResponse.ok) {
-        throw new Error(curriculumData.detail || "Unable to load curriculum.");
-      }
-      if (!progressResponse.ok) {
-        throw new Error(progressData.detail || "Unable to load curriculum progress.");
-      }
 
       setSubjects(curriculumData.items ?? []);
       setWeakSubjects(progressData.weak_subjects ?? []);
@@ -47,17 +38,7 @@ export function CurriculumProvider({ children }) {
   const addSubject = async (name) => {
     setIsSaving(true);
     try {
-      const response = await fetch("/api/curriculum/subjects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || "Unable to add subject.");
-      }
+      const data = await api.post("/api/curriculum/subjects", { name });
       await fetchCurriculum();
       return data;
     } catch (saveError) {
@@ -72,17 +53,7 @@ export function CurriculumProvider({ children }) {
   const addTopic = async (subjectId, name) => {
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/curriculum/subjects/${subjectId}/topics`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || "Unable to add topic.");
-      }
+      const data = await api.post(`/api/curriculum/subjects/${subjectId}/topics`, { name });
       await fetchCurriculum();
       return data;
     } catch (saveError) {
@@ -97,17 +68,7 @@ export function CurriculumProvider({ children }) {
   const updateTopicStatus = async (topicId, isCompleted) => {
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/curriculum/topics/${topicId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ is_completed: isCompleted }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || "Unable to update topic.");
-      }
+      const data = await api.patch(`/api/curriculum/topics/${topicId}`, { is_completed: isCompleted });
       await fetchCurriculum();
       return data;
     } catch (saveError) {
