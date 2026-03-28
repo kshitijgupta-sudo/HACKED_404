@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "SmartCampus",
+    "slug": "smartcampus",
+    "scheme": "smartcampus",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/icon/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#4CAF50"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.smartcampus.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to verify your face for attendance marking.",
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to verify you are physically present in the classroom.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs location access to verify attendance within campus premises."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon/icon.png",
+        "backgroundColor": "#4CAF50"
+      },
+      "package": "com.smartcampus.app",
+      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "web": {
+      "favicon": "./assets/icon/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow SmartCampus to access camera for face verification during attendance."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow SmartCampus to access your location to verify classroom presence."
+        }
+      ]
+    ],
+    "description": "AI-Powered Attendance & Student Productivity Platform - Attend smarter, learn faster, connect better."
+  }
+}
