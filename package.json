@@ -1,0 +1,8 @@
+{
+  "name": "smart-academic-management-system",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "sh scripts/dev.sh"
+  }
+}
